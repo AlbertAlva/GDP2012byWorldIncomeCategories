@@ -1,0 +1,66 @@
+---
+title: "MakeData"
+author: "Albert Alva"
+date: "November 14, 2016"
+output:
+  html_document:
+    keep_md: TRUE
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+##Gathering Data
+The first task in the project was to obtain the data. Gross Domestic Product data set was obtained from https://d396qusza40orc.cloudfront.net/getdata%2Fdata%2FGDP.csv. It contains Countries, World GDP Ranking and Gross Domestic Product for 2012. The income categories for the counties was obtained from https://d396qusza40orc.cloudfront.net/getdata%2Fdata%2FEDSTATS_Country.csv.
+The functions used were in the package listed below.
+ 	repmis   
+ 	 R2HTML, 
+ 	stats, ggplot2
+ 	tidyr
+ 	 data.table. 
+
+```{r gatheringdata}
+
+libraries <- c('ggplot2', 'dplyr', 'lubridate', 'tidyr', 'stringr')
+GDPRAW <- read.csv("https://d396qusza40orc.cloudfront.net/getdata%2Fdata%2FGDP.csv")
+EDURAW <- read.csv("https://d396qusza40orc.cloudfront.net/getdata%2Fdata%2FEDSTATS_Country.csv")
+write.csv(GDPRAW, "GDPRAW.csv")
+write.csv(EDURAW, "EDURAW.csv")
+```
+###Tidy Data
+This code chunk titled TidyData explains the steps to prepare the data for evaluation.
+
+Two data set are to be written GDPORIGINAL and EDUORIGINAL. They are subsets of the original data. Both datasets where written with just the variables needed to answer the research questions. The **view()** function was used to view the raw data to decide how to cut the data.
+The GDP data was imported with no headers since it contained a header and space before the data the column headings were also on seperate lines and one without a label. The data was imported without column labels and skipped the first 5 rows to strip off the header and labels. label V and the column number was temperarilly assigned to the columns Reimported the data. The EDU data was imported with headers and required little transformation beyond subsetting with the **subset()** function. The **names()** function was used to rename the variables. The **gsub("[^[:digit:]]",""** function removed commas from number fields and the  **gsub('[[:punct:] ]+** was used to eliminate punctuation from text.
+
+```{r TidyD}
+libraries <- c('ggplot2', 'dplyr', 'lubridate', 'tidyr', 'stringr','stats')
+GDPORIGINAL <- subset(read.csv("GDPRAW.csv",skip = 5, nrows = 190 ,header = FALSE,stringsAsFactors = FALSE), select =  c(2,3,5,6))
+names(GDPORIGINAL) <- c("CountryCode", "Countryrank", "Economy", "GDP")
+GDPORIGINAL[!complete.cases(GDPORIGINAL),]
+GDPORIGINAL$Countryrank <- as.numeric(GDPORIGINAL$Countryrank, na.exclude(GDPORIGINAL$Countryrank) )
+GDPORIGINAL$GDP <- as.numeric(gsub("[^[:digit:]]","", GDPORIGINAL$GDP))
+GDPORIGINAL$Economy <- gsub('[[:punct:] ]+','',GDPORIGINAL$Economy)
+EDUORIGINAL <- subset(read.csv("EDURAW.csv",header = TRUE,stringsAsFactors = FALSE), select =  c(2,3,4,5))
+names(EDUORIGINAL) <-gsub('[[:punct:] ]+','',names(EDUORIGINAL))
+EDUORIGINAL <- na.omit(EDUORIGINAL)
+EDUORIGINAL<- EDUORIGINAL[complete.cases(EDUORIGINAL$IncomeGroup),]
+EDUORIGINAL$LongName <- gsub('[[:punct:] ]+',' ', EDUORIGINAL$LongName)
+summary(GDPRAW)
+str(GDPRAW)
+summary(GDPORIGINAL)
+str(GDPORIGINAL)
+summary(EDUORIGINAL)
+str(EDUORIGINAL)
+write.csv(GDPORIGINAL,"GDPORIGINAL.csv")
+write.csv(EDUORIGINAL,"EDUORIGINAL.csv")
+```
+```{r Merging}
+GDPEDU<- merge(GDPORIGINAL,EDUORIGINAL,by.x = "CountryCode",
+by.y = "CountryCode",all.x = TRUE,all.y = FALSE)
+
+str(GDPEDU)
+summary(GDPEDU)
+str(GDPEDU)
+write.csv(GDPEDU,"GDPEDU.csv")
+
+
